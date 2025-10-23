@@ -7,7 +7,7 @@ from PIL import Image
 from transformers.image_utils import PILImageResampling
 from preprocess import Qwen2VLImageProcessorExport
 
-model_path="../../Qwen/Qwen3-VL-4B-Instruct/"
+model_path="../../Qwen/Qwen3-VL-2B-Instruct/"
 # model_path="../../Qwen/Qwen3-VL-4B-Thinking/"
 # default: Load the model on the available device(s)
 
@@ -21,7 +21,7 @@ model.model.visual.forward = model.model.visual.forward_image
 
 processor = AutoProcessor.from_pretrained(model_path)
 
-path = "./demo.jpeg"
+path = "../demo.jpeg"
 img = Image.open(path).resize((384,384))
 messages = [
     {
@@ -83,7 +83,7 @@ inputs = inputs.to(model.device)
 
 inputs["image_grid_thw"] = torch.tensor(grid_thw).reshape(1,3)
 inputs['pixel_values'] = pixel_values
-
+print("inputs_ids",inputs['input_ids'].tolist(),inputs['input_ids'].shape)
 # keys: 'input_ids', 'attention_mask', 'pixel_values', 'image_grid_thw'
 # Inference: Generation of the output
 generated_ids = model.generate(**inputs, max_new_tokens=128)

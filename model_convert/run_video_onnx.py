@@ -9,16 +9,16 @@ from modeling_qwen3_vl_export import Qwen3VLForConditionalGenerationONNX
 from preprocess import Qwen2VLImageProcessorExport
 from transformers.image_utils import PILImageResampling
 
-checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-4B-Instruct/"
+checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-2B-Instruct/"
 # default: Load the model on the available device(s)
 model = Qwen3VLForConditionalGenerationONNX.from_pretrained(
     checkpoint_dir, torch_dtype=torch.float32, device_map="cuda"
 )
 
-model.model.visual.init_onnx_session("Qwen3-VL-4B-Instruct_vision.onnx")
+model.model.visual.init_onnx_session("Qwen3-VL-2B-Instruct_vision.onnx")
 model.model.visual.forward = model.model.visual.forward_video
 
-paths = sorted(glob("./video/*.jpg"))
+paths = sorted(glob("../video/*.jpg"))
 print(paths)
 frames = [ Image.open(p).resize((384,384)) for p in paths ]
 
@@ -93,7 +93,7 @@ inputs = processor(
     do_resize=False,
 )
 inputs = inputs.to("cuda")
-
+print("input_ids",inputs['input_ids'])
 inputs['pixel_values_videos'] = pixel_values
 # Inference
 generated_ids = model.generate(**inputs, max_new_tokens=2048)

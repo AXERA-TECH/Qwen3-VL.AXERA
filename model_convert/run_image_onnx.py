@@ -7,7 +7,7 @@ from PIL import Image
 from transformers.image_utils import PILImageResampling
 from preprocess import Qwen2VLImageProcessorExport
 
-model_path="../../Qwen/Qwen3-VL-4B-Instruct/"
+model_path="../../Qwen/Qwen3-VL-2B-Instruct/"
 # model_path="../../Qwen/Qwen3-VL-4B-Thinking/"
 # default: Load the model on the available device(s)
 
@@ -16,12 +16,12 @@ device="cuda"
 model = Qwen3VLForConditionalGenerationONNX.from_pretrained(
     model_path, dtype="auto", device_map=device
 )
-model.model.visual.init_onnx_session("Qwen3-VL-4B-Instruct_vision.onnx")
+model.model.visual.init_onnx_session("Qwen3-VL-2B-Instruct_vision.onnx")
 model.model.visual.forward = model.model.visual.forward_image
 
 processor = AutoProcessor.from_pretrained(model_path)
 
-path = "./demo.jpeg"
+path = "../demo.jpeg"
 img = Image.open(path).resize((384,384))
 messages = [
     {

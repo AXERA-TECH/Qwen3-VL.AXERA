@@ -187,9 +187,9 @@ class Qwen3VLVisionModelONNX(Qwen3VLVisionModel):
             outputs = self.session.run(None, inputs)
 
             outputs0.append(  torch.from_numpy(outputs[0]).to(device) )
-            outputs1.append(  torch.from_numpy(outputs[0]).to(device) )
-            outputs2.append(  torch.from_numpy(outputs[0]).to(device) )
-            outputs3.append(  torch.from_numpy(outputs[0]).to(device) )
+            outputs1.append(  torch.from_numpy(outputs[1]).to(device) )
+            outputs2.append(  torch.from_numpy(outputs[2]).to(device) )
+            outputs3.append(  torch.from_numpy(outputs[3]).to(device) )
 
         outputs0 = torch.cat(outputs0, 0)
         outputs1 = torch.cat(outputs1, 0)

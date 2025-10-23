@@ -1,4 +1,4 @@
-# Qwen3-VL-4B-Instruct
+# Qwen3-VL-2B-Instruct
 export greedy='false'
 export top_p=0.8
 export top_k=20

@@ -56,16 +56,16 @@ if __name__ == "__main__":
 
     prefill_len = 1152
     chunk_len = 128
-    checkpoint_dir=f"../../Qwen/Qwen3-VL-4B-Instruct-AX650-c128_p1152/"
+    checkpoint_dir=f"../../Qwen/Qwen3-VL-2B-Instruct-AX650-c128_p1152/"
     cfg = AutoConfig.from_pretrained(
-        "../../Qwen/Qwen3-VL-4B-Instruct", trust_remote_code=True
+        "../../Qwen/Qwen3-VL-2B-Instruct", trust_remote_code=True
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "../../Qwen/Qwen3-VL-4B-Instruct", trust_remote_code=True
+        "../../Qwen/Qwen3-VL-2B-Instruct", trust_remote_code=True
     )
         
-    processor = AutoProcessor.from_pretrained("../../Qwen/Qwen3-VL-4B-Instruct") 
+    processor = AutoProcessor.from_pretrained("../../Qwen/Qwen3-VL-2B-Instruct") 
     
     path = "../demo.jpeg"
     img = Image.open(path).resize((384,384))
@@ -97,45 +97,64 @@ if __name__ == "__main__":
     )
 
     position_ids,_ = get_rope_index(cfg, inputs["input_ids"], image_grid_thw=inputs['image_grid_thw'])
+    
     print("position_ids",position_ids.shape)
     print(position_ids)
-    # pixel_values = inputs['pixel_values_videos']
-    # print("pixel_values",pixel_values.shape)
+
     # extract img feature by vit
-    vit_session = InferenceSession(f'{checkpoint_dir}/Qwen3-VL-4B-Instruct_vision.axmodel')
+    vit_session = InferenceSession(f'{checkpoint_dir}/Qwen3-VL-2B-Instruct_vision.axmodel')
 
     img_processor = Qwen2VLImageProcessorExport(max_pixels=384*384, patch_size=16, temporal_patch_size=2, merge_size=2)
     pixel_values, grid_thw = img_processor._preprocess(img, do_resize=True, resample=PILImageResampling.BICUBIC, 
                                         do_rescale=False, do_normalize=False, 
                                         do_convert_rgb=True)
 
-    # seq_len, dim = pixel_values.shape
-    # ht = pixel_values.reshape(t, seq_len//t, dim)
     print("pixel_values.shape",pixel_values.shape)
     t, seq_len,_,_ = pixel_values.shape
-    vit_output = []
-    for i in range(t):
-        out = vit_session.run(None, {"hidden_states": pixel_values[i:i+1]})[0]  
-        vit_output.append(out.astype(bfloat16))
     
+    vit_output = []
+    vit_output1 = []
+    vit_output2 = []
+    vit_output3 = []
+    for i in range(t):
+        ht = pixel_values[i:i+1]
+        outputs = vit_session.run(None, {"hidden_states": ht})
+
+        vit_output.append(  outputs[0] )
+        vit_output1.append(  outputs[1] )
+        vit_output2.append(  outputs[2] )
+        vit_output3.append(  outputs[3] )
+
+    vit_output = np.concatenate(vit_output, axis=0)
+    vit_output1 = np.concatenate(vit_output1, axis=0)
+    vit_output2 = np.concatenate(vit_output2, axis=0)
+    vit_output3 = np.concatenate(vit_output3, axis=0)
+    
+    deepstack_visual_embeds = [vit_output1, vit_output2, vit_output3]
     del vit_session
     gc.collect()
 
-    vit_output = np.concatenate(vit_output, axis=0)
+    print("vit_output",vit_output.shape)
     vit_output = vit_output[None,:,:]
     
     print("vit feature extract done!")
 
     token_ids = inputs['input_ids'].squeeze().numpy().tolist()
+
+    token_len = len(token_ids)
+    chunk_num = math.ceil(token_len / chunk_len)
+    visual_pos_masks = np.zeros([chunk_num*chunk_len]).astype(bool)
+    visual_pos_masks[0:token_len] = (inputs['input_ids'].squeeze().numpy()==151655) | (inputs['input_ids'].squeeze().numpy()==151656)
+    visual_pos_masks = visual_pos_masks.reshape(1,-1)
+
+    print("visual_pos_masks",visual_pos_masks)
     print("token_ids",token_ids)
     image_start_index = np.where(np.array(token_ids) == 151652)[0].tolist()[0]
     image_insert_index = image_start_index + 1
     embeds = np.load(f"{checkpoint_dir}/model.embed_tokens.weight.npy")
     prefill_data = np.take(embeds, token_ids, axis=0)
     prefill_data = prefill_data.astype(bfloat16)
-    
     prefill_data[ image_insert_index : image_insert_index + vit_output.shape[1]] = vit_output[0, :, :]
-    token_len = len(token_ids)
 
 
     lastN = 2047
@@ -189,7 +208,6 @@ if __name__ == "__main__":
             mask[:, i, : i + 1] = 0
         mask = mask.astype(bfloat16)
 
-        chunk_num = math.ceil(token_len / chunk_len)
         for i in range(cfg.num_hidden_layers):
             if chunk_len <= 0:
                 input_feed = {
@@ -237,14 +255,16 @@ if __name__ == "__main__":
                 
                 data = np.concatenate(last_layer_output, axis=1)
 
+                if deepstack_visual_embeds is not None and i in range(len(deepstack_visual_embeds)):
+                    data[visual_pos_masks] = data[visual_pos_masks] +  deepstack_visual_embeds[i]
+            
     post_out = post_process_session.run(None, {"input": data[:, token_len - 1:token_len, :]})[0]
-    next_token, posssible_tokens, possible_soft = post_process(post_out, topk=1)
+    next_token, posssible_tokens, possible_soft = post_process(post_out)
     posibles = [tokenizer.decode([t]) for t in posssible_tokens]
     posible_soft = [str((t, s)) for t, s in zip(posibles, possible_soft)]
     token_ids.append(next_token)
     print("prefill done!")
-  
-
+    
     # lastN = np.max(indices)
     start_ids = np.max(indices) + 1
     mask = np.zeros((1, 1, lastN + 1), dtype=np.float32).astype(bfloat16)

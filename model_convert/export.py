@@ -33,9 +33,9 @@ def export_onnx(model, input, input_names, output_names, onnx_output):
     # print("onnx simpilfy successed, and model saved in {}".format(onnx_output))
 
 
-checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-4B-Instruct/"
+checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-2B-Instruct/"
 which = sys.argv[2] if len(sys.argv)>=3 else "image"
-onnx_output = sys.argv[3] if len(sys.argv)>=4 else "Qwen2.5-VL-7B-Instruct_vision.onnx"
+onnx_output = sys.argv[3] if len(sys.argv)>=4 else "Qwen3-VL-2B-Instruct_vision.onnx"
 # default: Load the model on the available device(s)
 model = Qwen3VLForConditionalGenerationExport.from_pretrained(
     checkpoint_dir, torch_dtype=torch.float32, device_map="cpu"

@@ -6,13 +6,13 @@ from PIL import Image
 from glob import glob
 import numpy as np 
 
-checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-4B-Instruct/"
+checkpoint_dir = sys.argv[1] if len(sys.argv)>=2 else "../../Qwen/Qwen3-VL-2B-Instruct/"
 # default: Load the model on the available device(s)
 model = Qwen3VLForConditionalGeneration.from_pretrained(
     checkpoint_dir, torch_dtype=torch.float32, device_map="cuda"
 )
 
-paths = sorted(glob("./video/*.jpg"))
+paths = sorted(glob("../video/*.jpg"))
 print(paths)
 frames = [ Image.open(p).resize((384,384)) for p in paths ]
 
@@ -44,7 +44,7 @@ processor = AutoProcessor.from_pretrained(checkpoint_dir)
 text = processor.apply_chat_template(
     messages, tokenize=False, add_generation_prompt=True
 )
-image_inputs, video_inputs, video_kwargs = process_vision_info([messages],  return_video_kwargs=True, image_patch_size= 16, return_video_metadata=True)
+image_inputs, video_inputs, video_kwargs = process_vision_info(messages,  return_video_kwargs=True, image_patch_size= 16, return_video_metadata=True)
 if video_inputs is not None:
     video_inputs, video_metadatas = zip(*video_inputs)
     video_inputs, video_metadatas = list(video_inputs), list(video_metadatas)
@@ -62,12 +62,15 @@ inputs = processor(
 )
 inputs = inputs.to("cuda")
 # position_ids,_ = get_rope_index(cfg, inputs["input_ids"], video_grid_thw=inputs['video_grid_thw'], second_per_grid_ts=inputs['second_per_grid_ts'])
-
+print("input_ids",inputs['input_ids'].shape)
 # Inference
 generated_ids = model.generate(**inputs, max_new_tokens=2048)
+print("generated_ids",generated_ids)
 generated_ids_trimmed = [
     out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
 ]
+print("generated_ids_trimmed",generated_ids_trimmed)
+print(generated_ids_trimmed[0].shape)
 output_text = processor.batch_decode(
     generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
 )
