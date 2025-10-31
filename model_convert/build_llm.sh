@@ -1,7 +1,7 @@
 set -e
 
-pulsar2 llm_build --input_path ../../Qwen/Qwen3-VL-4B-Instruct/ \
-                --output_path ../../Qwen/Qwen3-VL-4B-Instruct-AX650-c128_p1152 \
+pulsar2 llm_build --input_path ../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit-1030-4 \
+                --output_path ../../Qwen/Qwen3-VL-2B-Instruct-AX650-c128_p1152-1030-4bit \
                 --model_type qwen3_vl_text \
                 --kv_cache_len 2047 \
                 --hidden_state_type bf16 \
@@ -16,7 +16,8 @@ pulsar2 llm_build --input_path ../../Qwen/Qwen3-VL-4B-Instruct/ \
                 --last_kv_cache_len 1024 \
                 --last_kv_cache_len 1152 \
                 --chip AX650 \
-                --parallel 16
+                --parallel 16 \
+                -w s4
 
 
-./tools/embed_process.sh ../../Qwen/Qwen3-VL-4B-Instruct/ ../../Qwen/Qwen3-VL-4B-Instruct-AX650-c128_p1152
+./tools/embed_process.sh ../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit-1030-4 ../../Qwen/Qwen3-VL-2B-Instruct-AX650-c128_p1152-1030-4bit

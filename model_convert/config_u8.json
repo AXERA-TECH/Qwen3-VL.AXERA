@@ -1,0 +1,54 @@
+{
+  "model_type": "ONNX",
+  "npu_mode": "NPU3",
+  "quant": {
+    "input_configs": [
+      {
+        "tensor_name": "hidden_states",
+        "calibration_dataset": "calib_img/hidden_states.tar",
+        "calibration_size": 8,
+        "calibration_mean": [127.5 , 127.5 , 127.5],
+        "calibration_std": [127.5 , 127.5 , 127.5],
+        "calibration_format":"Image"
+      }
+    ],
+    "calibration_method": "MinMax",
+    "precision_analysis": true,
+    "precision_analysis_method": "PerLayer",
+    "conv_bias_data_type": "FP32",
+    "enable_smooth_quant": true,
+	  "disable_auto_refine_scale": true,
+    "layer_configs":  [
+      {
+        "start_tensor_names": ["DEFAULT"], 
+        "end_tensor_names": ["DEFAULT"], 
+        "data_type": "U8"
+      },
+      {
+        "op_type": "MatMul", 
+        "data_type": "U16"
+      },
+      {
+        "op_type": "LayerNormalization",
+        "data_type": "U16"
+      },
+      {
+        "op_type": "Add", 
+        "data_type": "U16"
+      }
+
+    ]
+  },
+  "input_processors": [
+    {
+      "tensor_name": "hidden_states",
+      "tensor_format": "BGR",
+      "tensor_layout": "NCHW",
+      "src_dtype": "U8",
+      "src_layout": "NHWC"
+    }
+  ],
+  "compiler": {
+    "npu_perf": false
+  }
+}

@@ -2,42 +2,34 @@ from datasets import load_dataset
 from gptqmodel import GPTQModel, QuantizeConfig
 from transformers import AutoTokenizer
 import os
+import json
+import random 
+from PIL import Image
 
-# model_id = "meta-llama/Llama-3.2-1B-Instruct"
-# quant_path = "Llama-3.2-1B-Instruct-gptqmodel-4bit"
-
-model_id = "../../Qwen/Qwen3-VL-2B-Instruct/" # "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit"
+model_id = "../../Qwen/Qwen3-VL-2B-Instruct/" 
+quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit-1030-4"
 
 
+# https://huggingface.co/datasets/lmms-lab/COCO-Caption
+dataset = load_dataset("parquet", data_files="val-00001-of-00013.parquet", split="train").shuffle()
 
-# calibration_dataset = load_dataset(
-#     "allenai/c4",
-#     data_files="en/c4-train.00001-of-01024.json.gz",
-#     split="train"
-#   ).select(range(1024))["text"]
+calibration_dataset = []
 
-# tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True, trust_remote_code = True)
-# calibration_dataset = [
-#         tokenizer(
-#             "gptqmodel is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."
-#         )
-#     ]
-
-calibration_dataset = [
-        [
-        {
-            "role": "user",
-            "content": [
+for i in range(512):
+    item = dataset[i]
+    d = [
                 {
-                    "type": "image",
-                    "image": "../demo.jpeg",
-                },
-                {"type": "text", "text": "描述图片内容"},
-            ],
-        }
-    ]
-]
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "image": item["image"].resize((384,384))
+                        },
+                        {"type": "text", "text": item['question']},
+                    ],
+                }
+            ]
+    calibration_dataset.append(d)
 
 quant_config = QuantizeConfig(
         bits=4,  # quantize model to 4-bit
@@ -45,11 +37,14 @@ quant_config = QuantizeConfig(
         desc_act=False,
         static_groups=True,
         sym=True,
+        v2=True,
+        mse=2.5,
+        v2_memory_device="auto"  
     )
 
 model = GPTQModel.load(model_id, quant_config)
 
 # increase `batch_size` to match gpu/vram specs to speed up quantization
-model.quantize(calibration_dataset, batch_size=1)
+model.quantize(calibration_dataset, batch_size=32)
 
 model.save(quant_path)

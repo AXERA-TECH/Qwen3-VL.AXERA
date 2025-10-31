@@ -1,12 +1,16 @@
 from transformers import  AutoProcessor
 from gptqmodel import GPTQModel, QuantizeConfig
+from PIL import Image
 
-model_path="../../Qwen/Qwen3-VL-2B-Instruct/"
-quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit"
+model_path="../../Qwen/Qwen3-VL-4B-Instruct/"
+quant_path = "../../Qwen/Qwen3-VL-4B-Instruct-GPTQ-4bit-1030"
 
 device = "cpu"
 
 processor = AutoProcessor.from_pretrained(model_path)
+
+path = "../demo.jpeg"
+img = Image.open(path).resize((384,384))
 
 messages = [
     {
@@ -14,7 +18,7 @@ messages = [
         "content": [
             {
                 "type": "image",
-                "image": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg",
+                "image": img,
             },
             {"type": "text", "text": "描述图片内容"},
         ],
