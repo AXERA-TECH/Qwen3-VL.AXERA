@@ -1,4 +1,5 @@
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
+from PIL import Image 
 
 model_path="../../Qwen/Qwen3-VL-2B-Instruct/"
 # model_path="../../Qwen/Qwen3-VL-4B-Thinking/"
@@ -16,14 +17,15 @@ model = Qwen3VLForConditionalGeneration.from_pretrained(
 # )
 
 processor = AutoProcessor.from_pretrained(model_path)
-
+path = "demo_720p.jpg"
+img = Image.open(path).resize((1280,640))
 messages = [
     {
         "role": "user",
         "content": [
             {
                 "type": "image",
-                "image": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg",
+                "image": img,
             },
             {"type": "text", "text": "描述图片内容"},
         ],

@@ -16,13 +16,14 @@ device="cuda"
 model = Qwen3VLForConditionalGenerationONNX.from_pretrained(
     model_path, dtype="auto", device_map=device
 )
-model.model.visual.init_onnx_session("Qwen3-VL-2B-Instruct_vision.onnx")
-model.model.visual.forward = model.model.visual.forward_image
+# model.model.visual.init_onnx_session("Qwen3-VL-2B-Instruct_vision_1280x736.onnx")
+model.model.visual.init_onnx_session("Qwen3-VL-2B-Instruct_vision_640x640_p1.onnx", "Qwen3-VL-2B-Instruct_vision_640x640_p2.onnx")
+model.model.visual.forward = model.model.visual.forward_dynamic
 
 processor = AutoProcessor.from_pretrained(model_path)
 
-path = "../demo.jpeg"
-img = Image.open(path).resize((384,384))
+path = "demo_720p.jpg"
+img = Image.open(path).resize((1280,640))
 messages = [
     {
         "role": "user",
@@ -38,7 +39,7 @@ messages = [
 
 images = [img]
 
-img_processor = Qwen2VLImageProcessorExport(max_pixels=384*384, patch_size=16, temporal_patch_size=2, merge_size=2)
+img_processor = Qwen2VLImageProcessorExport(max_pixels=1280*640, patch_size=16, temporal_patch_size=2, merge_size=2)
 
 image_mean = [
     0.5,

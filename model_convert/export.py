@@ -44,7 +44,7 @@ model = Qwen3VLForConditionalGenerationExport.from_pretrained(
 export_model = model.model.visual
 
 if which=="image":
-    export_model.forward = export_model.forward_image
+    export_model.forward = export_model.forward_chunk1
 elif which=="video":
     export_model.forward = export_model.forward_export_by_second_nchw
 else:
@@ -52,7 +52,8 @@ else:
 device = torch.device("cpu")
 
 
-hidden_states = torch.load("hidden_states.pth",weights_only=True).to(torch.float32).to(device)
+# hidden_states = torch.load("hidden_states.pth",weights_only=True).to(torch.float32).to(device)
+hidden_states = torch.ones((1,3, 1600,512) ).to(torch.float32).to(device)
 print("hidden_states",hidden_states.shape)
 
 input = ( hidden_states)
@@ -64,5 +65,29 @@ input_names = ["hidden_states"]
 output_names = [f"hidden_states_out", "deepstack_feature_0", "deepstack_feature_1", "deepstack_feature_2"]
 
 
-export_onnx(export_model, input, input_names, output_names, onnx_output)    
+export_onnx(export_model, input, input_names, output_names, "Qwen3-VL-2B-Instruct_vision_640x640_p1.onnx")    
+
+
+
+if which=="image":
+    export_model.forward = export_model.forward_chunk2
+elif which=="video":
+    export_model.forward = export_model.forward_export_by_second_nchw
+else:
+    raise NotImplementedError
+device = torch.device("cpu")
+
+
+
+
+input = ( hidden_states)
+
+input_names = ["hidden_states"]
+
+
+
+output_names = [f"hidden_states_out", "deepstack_feature_0", "deepstack_feature_1", "deepstack_feature_2"]
+
+
+export_onnx(export_model, input, input_names, output_names, "Qwen3-VL-2B-Instruct_vision_640x640_p2.onnx")    
 

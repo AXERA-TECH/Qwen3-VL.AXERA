@@ -9,14 +9,14 @@ import cv2
 import os 
 
 if __name__=="__main__":
-    paths = sorted(glob("../video/*"))
+    paths = sorted(glob("./video-test-04/*"))
     print(paths)
 
-    os.makedirs("calib_img")
+    os.makedirs("calib_img_640")
     for i,p in enumerate(paths):
-        img = Image.open(p).resize((384,384))
+        img = Image.open(p).resize((640,640))
         
-        img_processor = Qwen2VLImageProcessorExport(max_pixels=384*384, patch_size=16, temporal_patch_size=2, merge_size=2)
+        img_processor = Qwen2VLImageProcessorExport(max_pixels=640*640, patch_size=16, temporal_patch_size=2, merge_size=2)
         image_mean = [
             0.5,
             0.5,
@@ -38,4 +38,4 @@ if __name__=="__main__":
 
 
        
-        cv2.imwrite(f"calib_img/h{i}.jpg", pixel_values[0].astype(np.uint8))
+        cv2.imwrite(f"calib_img_640/h{i}.jpg", pixel_values[0].astype(np.uint8))
