@@ -35,7 +35,11 @@
       {
         "op_type": "Add", 
         "data_type": "U16"
-      }
+      },
+      {
+        "layer_names": ["op_31:onnx.Gelu", "/blocks.9/mlp/linear_fc2/Gemm"],
+        "data_type": "U16"
+      },
 
     ]
   },
