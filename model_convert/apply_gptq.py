@@ -7,7 +7,7 @@ import random
 from PIL import Image
 
 model_id = "../../Qwen/Qwen3-VL-2B-Instruct/" 
-quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-4bit-1030-4"
+quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-Int4"
 
 
 # https://huggingface.co/datasets/lmms-lab/COCO-Caption
@@ -45,6 +45,6 @@ quant_config = QuantizeConfig(
 model = GPTQModel.load(model_id, quant_config)
 
 # increase `batch_size` to match gpu/vram specs to speed up quantization
-model.quantize(calibration_dataset, batch_size=32)
+model.quantize(calibration_dataset, batch_size=8)
 
 model.save(quant_path)

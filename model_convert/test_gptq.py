@@ -3,7 +3,7 @@ from gptqmodel import GPTQModel, QuantizeConfig
 from PIL import Image
 
 model_path="../../Qwen/Qwen3-VL-4B-Instruct/"
-quant_path = "../../Qwen/Qwen3-VL-4B-Instruct-GPTQ-4bit-1030"
+quant_path = "../../Qwen/Qwen3-VL-4B-Instruct-GPTQ-Int4"
 
 device = "cpu"
 
