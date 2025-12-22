@@ -4,7 +4,6 @@ INPUT_DIR=../Qwen/Qwen3-VL-2B-Instruct
 OUTPUT_DIR=../Qwen3-VL-2B-Instruct--AX650-C128_P1152_CTX2047
 pulsar2 llm_build --input_path $INPUT_DIR \
                 --output_path  $OUTPUT_DIR \
-                --model_type qwen3_vl_text \
                 --kv_cache_len 2047 \
                 --hidden_state_type bf16 \
                 --prefill_len 128 \
