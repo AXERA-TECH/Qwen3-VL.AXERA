@@ -17,6 +17,7 @@ pulsar2 llm_build --input_path $INPUT_DIR \
                 --last_kv_cache_len 1024 \
                 --last_kv_cache_len 1152 \
                 --chip AX650 \
+                --parallel 8
 
 
 ./tools/embed_process.sh $INPUT_DIR $OUTPUT_DIR
