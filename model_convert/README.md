@@ -118,6 +118,6 @@ pulsar2 llm_build --input_path $INPUT_DIR \
 ./tools/embed_process.sh $INPUT_DIR $OUTPUT_DIR
 ```
 其中 `last_kv_cache_len` 的最大值就是 `prefill`阶段的最大token数，请根据实际情况设置这个值。
-
+`parallel` 会启动多进程编译，请根据您的计算机性能设置。
 
 至此，整个模型转换完毕。将 ../Qwen3-VL-2B-Instruct--AX650-C128_P1152_CTX2047 上传到爱芯的设备上准备运行。    
