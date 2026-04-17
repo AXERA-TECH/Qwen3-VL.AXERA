@@ -7,7 +7,7 @@ import random
 from PIL import Image
 
 model_id = "../../Qwen/Qwen3-VL-2B-Instruct/" 
-quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-Int4"
+quant_path = "../../Qwen/Qwen3-VL-2B-Instruct-GPTQ-Int4-0417"
 
 
 # https://huggingface.co/datasets/lmms-lab/COCO-Caption
@@ -37,9 +37,7 @@ quant_config = QuantizeConfig(
         desc_act=False,
         static_groups=True,
         sym=True,
-        v2=True,
         mse=2.5,
-        v2_memory_device="auto"  
     )
 
 model = GPTQModel.load(model_id, quant_config)
