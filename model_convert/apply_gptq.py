@@ -563,6 +563,7 @@ def main() -> None:
         group_size=128,
         desc_act=False,
         static_groups=True,
+        act_group_aware=False,
         sym=True,
         mse=QUANT_MSE,
         calibration_data_device=CALIBRATION_DEVICE,
