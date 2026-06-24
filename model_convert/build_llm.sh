@@ -1,5 +1,5 @@
 set -e
-
+export FLOAT_MATMUL_USE_CONV_EU=1 
 INPUT_DIR=../Qwen/Qwen3-VL-2B-Instruct
 OUTPUT_DIR=../Qwen3-VL-2B-Instruct--AX650-C128_P1152_CTX2047
 
