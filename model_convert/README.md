@@ -120,4 +120,107 @@ pulsar2 llm_build --input_path $INPUT_DIR \
 其中 `last_kv_cache_len` 的最大值就是 `prefill`阶段的最大token数，请根据实际情况设置这个值。
 `parallel` 会启动多进程编译，请根据您的计算机性能设置。
 
-至此，整个模型转换完毕。将 ../Qwen3-VL-2B-Instruct--AX650-C128_P1152_CTX2047 上传到爱芯的设备上准备运行。    
+至此，整个模型转换完毕。将 ../Qwen3-VL-2B-Instruct--AX650-C128_P1152_CTX2047 上传到爱芯的设备上准备运行。
+
+## 三、转换带多个 LoRA 的 Qwen3-VL-4B 文本段
+
+本节用于编译 `Qwen/Qwen3-VL-4B-Instruct` 的文本段，并在同一套 AXModel
+图上注册多个 PEFT LoRA adapter。LoRA adapter 只修改文本 decoder 的投影层，
+不包含 Vision Encoder；Vision Encoder 仍按本文件第一节单独导出和编译。
+
+### 1. 输入目录约定
+
+下面的目录名只是示例，均为相对于 `model_convert/` 的路径，可以通过环境变量
+覆盖：
+
+```text
+../Qwen/Qwen3-VL-4B-Instruct/       # 原始 Hugging Face 基座模型
+../Qwen/qwen3-vl-lora-chartqa/      # LoRA adapter A
+../Qwen/qwen3-vl-lora-design/       # LoRA adapter B
+```
+
+示例中的两个 adapter 分别来自：
+
+- [nugunaai/Qwen3-VL-4B-ChartQA-lora](https://huggingface.co/nugunaai/Qwen3-VL-4B-ChartQA-lora)
+- [raginigupta6/qwen3-vl-4b-design-copilot-grpo](https://huggingface.co/raginigupta6/qwen3-vl-4b-design-copilot-grpo)
+
+它们分别以 ChartQA 和 Design CoPilot 为训练/发布意图。本节只说明其编译和
+运行时动态切换方式，不代表已经验证这两个 adapter 的领域任务精度。
+
+每个 adapter 目录必须包含 `adapter_config.json` 和
+`adapter_model.safetensors`。多个 adapter 必须共享同一个编译契约：
+
+- 基座模型均为 `Qwen/Qwen3-VL-4B-Instruct`；
+- 固定 rank，且覆盖基座的全部文本层；
+- 目标模块必须是 `q_proj`、`k_proj`、`v_proj`、`o_proj`、`gate_proj`、
+  `up_proj`、`down_proj`；
+- A/B 矩阵形状必须与 Qwen3-VL-4B 文本配置一致；
+- `bias=none`，不使用 DoRA、RS-LoRA、QALoRA 或额外可训练模块；
+- 源 A/B 权重为 F32 或 BF16，编译产物统一打包为运行时 BF16。
+
+### 2. 编译命令
+
+先进入本目录，并确认当前 `pulsar2` 构建包含 `llm_build2` 的
+`--lora_adapter_path` 支持。命令可以直接写入环境变量，也可以只修改四个目录
+变量，不需要改脚本：
+
+```bash
+MODEL_DIR=../Qwen/Qwen3-VL-4B-Instruct \
+OUTPUT_DIR=../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P4K-C6K \
+ADAPTER_CHARTQA_DIR=../Qwen/qwen3-vl-lora-chartqa \
+ADAPTER_DESIGN_DIR=../Qwen/qwen3-vl-lora-design \
+bash build_llm_lora.sh
+```
+
+脚本实际执行的核心命令如下；`--lora_adapter_path` 可以重复传入，每个值对应
+一个 adapter：
+
+```bash
+pulsar2 llm_build2 \
+    --input_path "$MODEL_DIR" \
+    --output_path "$OUTPUT_DIR" \
+    --hidden_state_type bf16 \
+    --weight_type s8 \
+    --post_weight_type s8 \
+    --prefill_len 4096 \
+    --prefill_step_size 256 \
+    --max_context 6144 \
+    --decode_step_size -1 \
+    --chip AX650 \
+    --parallel 8 \
+    --tensor_parallel_size 0 \
+    -c 0 \
+    --lora_adapter_path "$ADAPTER_CHARTQA_DIR" \
+    --lora_adapter_path "$ADAPTER_DESIGN_DIR"
+```
+
+参数含义：`--prefill_len 4096` 是总 prefill 容量，
+`--prefill_step_size 256` 是每个 prefill 子图的 chunk 大小，
+`--max_context 6144` 是最大 decode attention context，
+`--decode_step_size -1` 生成单个 decode 子图，`-c 0` 关闭编译阶段的
+simulator check，`--tensor_parallel_size 0` 表示非 tensor-parallel 编译。
+LoRA matrix-input 当前只支持 AX650、BF16 hidden state 和非 tensor-parallel
+配置。
+
+### 3. 提取 embedding 权重
+
+`llm_build2` 完成后，脚本会调用已有的 `tools/embed_process.sh`，从基座模型提取
+embedding 并生成运行时需要的 BF16 文件：
+
+```bash
+./tools/embed_process.sh "$MODEL_DIR" "$OUTPUT_DIR"
+```
+
+最终输出目录应包含 36 个 `qwen3_vl_text_p256_l*_together.axmodel`、一个
+`qwen3_vl_text_post.axmodel`、`model.embed_tokens.weight.bfloat16.bin`，以及：
+
+```text
+OUTPUT_DIR/lora/<adapter-id>/layer_00.bf16.bin ... layer_35.bf16.bin
+OUTPUT_DIR/lora/<adapter-id>/manifest.json
+OUTPUT_DIR/lora/<adapter-id>/source_adapter_config.json
+```
+
+`<adapter-id>` 取 adapter 目录名。运行时可使用这些目录中的 task ID 动态选择
+adapter；编译阶段只需把所有要支持的 adapter 通过重复的
+`--lora_adapter_path` 一起传入。当前 runtime 的 active adapter 是进程级状态，
+不同 task 的请求需要串行发送。
