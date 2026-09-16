@@ -166,7 +166,7 @@ pulsar2 llm_build --input_path $INPUT_DIR \
 
 ```bash
 MODEL_DIR=../Qwen/Qwen3-VL-4B-Instruct \
-OUTPUT_DIR=../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P4K-C6K \
+OUTPUT_DIR=../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P1536-C2048 \
 ADAPTER_CHARTQA_DIR=../Qwen/qwen3-vl-lora-chartqa \
 ADAPTER_DESIGN_DIR=../Qwen/qwen3-vl-lora-design \
 bash build_llm_lora.sh
@@ -176,15 +176,15 @@ bash build_llm_lora.sh
 一个 adapter：
 
 ```bash
-pulsar2 llm_build2 \
+FLOAT_MATMUL_USE_CONV_EU=1 pulsar2 llm_build2 \
     --input_path "$MODEL_DIR" \
     --output_path "$OUTPUT_DIR" \
     --hidden_state_type bf16 \
     --weight_type s8 \
     --post_weight_type s8 \
-    --prefill_len 4096 \
-    --prefill_step_size 256 \
-    --max_context 6144 \
+    --prefill_len 1536 \
+    --prefill_step_size 128 \
+    --max_context 2048 \
     --decode_step_size -1 \
     --chip AX650 \
     --parallel 8 \
@@ -194,9 +194,10 @@ pulsar2 llm_build2 \
     --lora_adapter_path "$ADAPTER_DESIGN_DIR"
 ```
 
-参数含义：`--prefill_len 4096` 是总 prefill 容量，
-`--prefill_step_size 256` 是每个 prefill 子图的 chunk 大小，
-`--max_context 6144` 是最大 decode attention context，
+参数含义：`FLOAT_MATMUL_USE_CONV_EU=1` 在 AX650 上启用 float matmul 的
+CONV-EU 路径，用于缩短 TTFT；`--prefill_len 1536` 是总 prefill 容量，
+`--prefill_step_size 128` 是每个 prefill 子图的 chunk 大小，
+`--max_context 2048` 是最大 decode attention context，
 `--decode_step_size -1` 生成单个 decode 子图，`-c 0` 关闭编译阶段的
 simulator check，`--tensor_parallel_size 0` 表示非 tensor-parallel 编译。
 LoRA matrix-input 当前只支持 AX650、BF16 hidden state 和非 tensor-parallel
@@ -211,7 +212,7 @@ embedding 并生成运行时需要的 BF16 文件：
 ./tools/embed_process.sh "$MODEL_DIR" "$OUTPUT_DIR"
 ```
 
-最终输出目录应包含 36 个 `qwen3_vl_text_p256_l*_together.axmodel`、一个
+最终输出目录应包含 36 个 `qwen3_vl_text_p128_l*_together.axmodel`、一个
 `qwen3_vl_text_post.axmodel`、`model.embed_tokens.weight.bfloat16.bin`，以及：
 
 ```text

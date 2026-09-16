@@ -4,9 +4,9 @@ set -euo pipefail
 # Set these variables to directories visible from the conversion environment.
 # The adapter directory name becomes the runtime task_id, so keep each name
 # unique and use only letters, digits, '.', '_' or '-'.
-export FLOAT_MATMUL_USE_CONV_EU="${FLOAT_MATMUL_USE_CONV_EU:-1}"
+export FLOAT_MATMUL_USE_CONV_EU=1
 MODEL_DIR="${MODEL_DIR:-../Qwen/Qwen3-VL-4B-Instruct}"
-OUTPUT_DIR="${OUTPUT_DIR:-../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P4K-C6K}"
+OUTPUT_DIR="${OUTPUT_DIR:-../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P1536-C2048}"
 ADAPTER_CHARTQA_DIR="${ADAPTER_CHARTQA_DIR:-../Qwen/qwen3-vl-lora-chartqa}"
 ADAPTER_DESIGN_DIR="${ADAPTER_DESIGN_DIR:-../Qwen/qwen3-vl-lora-design}"
 
@@ -16,9 +16,9 @@ pulsar2 llm_build2 \
   --hidden_state_type bf16 \
   --weight_type s8 \
   --post_weight_type s8 \
-  --prefill_len 4096 \
-  --prefill_step_size 256 \
-  --max_context 6144 \
+  --prefill_len 1536 \
+  --prefill_step_size 128 \
+  --max_context 2048 \
   --decode_step_size -1 \
   --chip AX650 \
   --parallel 8 \
