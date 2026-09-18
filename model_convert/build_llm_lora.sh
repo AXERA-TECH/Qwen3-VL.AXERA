@@ -30,5 +30,6 @@ pulsar2 llm_build2 \
   --lora_adapter_path "$ADAPTER_DESIGN_DIR"
 
 # Generate the runtime BF16 token embedding expected by axllm.
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-"$SCRIPT_DIR/tools/embed_process.sh" "$MODEL_DIR" "$OUTPUT_DIR"
+# embed_process.sh resolves tools/ relatively, so run this script from
+# model_convert/ (the default MODEL_DIR/OUTPUT_DIR above are relative too).
+./tools/embed_process.sh "$MODEL_DIR" "$OUTPUT_DIR"
