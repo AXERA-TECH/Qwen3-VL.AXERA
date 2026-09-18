@@ -4,7 +4,9 @@ set -euo pipefail
 # Set these variables to directories visible from the conversion environment.
 # The adapter directory name becomes the runtime task_id, so keep each name
 # unique and use only letters, digits, '.', '_' or '-'.
-export FLOAT_MATMUL_USE_CONV_EU=1
+#
+# Note: FLOAT_MATMUL_USE_CONV_EU is not supported for this LoRA build and must
+# stay unset. Enabling it fails while building the LoRA branch.
 MODEL_DIR="${MODEL_DIR:-../Qwen/Qwen3-VL-4B-Instruct}"
 OUTPUT_DIR="${OUTPUT_DIR:-../Qwen/Qwen3-VL-4B-Instruct-LoRA-AX650-P1536-C2048}"
 ADAPTER_CHARTQA_DIR="${ADAPTER_CHARTQA_DIR:-../Qwen/qwen3-vl-lora-chartqa}"

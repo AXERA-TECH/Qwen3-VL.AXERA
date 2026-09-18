@@ -176,7 +176,7 @@ bash build_llm_lora.sh
 一个 adapter：
 
 ```bash
-FLOAT_MATMUL_USE_CONV_EU=1 pulsar2 llm_build2 \
+pulsar2 llm_build2 \
     --input_path "$MODEL_DIR" \
     --output_path "$OUTPUT_DIR" \
     --hidden_state_type bf16 \
@@ -194,14 +194,20 @@ FLOAT_MATMUL_USE_CONV_EU=1 pulsar2 llm_build2 \
     --lora_adapter_path "$ADAPTER_DESIGN_DIR"
 ```
 
-参数含义：`FLOAT_MATMUL_USE_CONV_EU=1` 在 AX650 上启用 float matmul 的
-CONV-EU 路径，用于缩短 TTFT；`--prefill_len 1536` 是总 prefill 容量，
+参数含义：`--prefill_len 1536` 是总 prefill 容量，
 `--prefill_step_size 128` 是每个 prefill 子图的 chunk 大小，
 `--max_context 2048` 是最大 decode attention context，
 `--decode_step_size -1` 生成单个 decode 子图，`-c 0` 关闭编译阶段的
 simulator check，`--tensor_parallel_size 0` 表示非 tensor-parallel 编译。
 LoRA matrix-input 当前只支持 AX650、BF16 hidden state 和非 tensor-parallel
 配置。
+
+> **关于 `FLOAT_MATMUL_USE_CONV_EU`**
+>
+> 该环境变量用于在 AX650 上启用 float matmul 的 CONV-EU 路径。
+> **本 LoRA 编译流程当前不支持该环境变量，请保持其未设置。**
+> 开启后会在编译 LoRA 分支时失败。上面的命令与 `build_llm_lora.sh`
+> 都不设置该变量，请勿自行添加。
 
 ### 3. 提取 embedding 权重
 
